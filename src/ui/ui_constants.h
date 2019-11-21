@@ -1,0 +1,6 @@
+#ifndef BACKGAMMON_UI_CONSTANTS_H
+#define BACKGAMMON_UI_CONSTANTS_H
+
+#define SELECTED_COLOR "#00aa00"
+
+#endif

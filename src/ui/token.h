@@ -1,9 +1,9 @@
-#ifndef BACKGAMMON_TOKEN_H
-#define BACKGAMMON_TOKEN_H
+#ifndef BACKGAMMON_UI_TOKEN_H
+#define BACKGAMMON_UI_TOKEN_H
 
 #include "web/web.h"
 
-#include "./constants.h"
+#include "./ui_constants.h"
 
 class Token{
 private:

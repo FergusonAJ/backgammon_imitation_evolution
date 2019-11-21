@@ -1,9 +1,9 @@
-#ifndef BACKGAMMON_TRIANGLE_H
-#define BACKGAMMON_TRIANGLE_H
+#ifndef BACKGAMMON_UI_TRIANGLE_H
+#define BACKGAMMON_UI_TRIANGLE_H
 
 // Local 
 #include "./token.h"
-#include "./constants.h"
+#include "./ui_constants.h"
 // Empirical
 #include "web/web.h"
 // Standard library

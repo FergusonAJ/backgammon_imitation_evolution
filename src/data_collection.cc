@@ -1,8 +1,8 @@
 //Local 
-#include "./token.h"
-#include "./triangle.h"
-#include "./die.h"
-#include "./constants.h"
+#include "./ui/token.h"
+#include "./ui/triangle.h"
+#include "./ui/die.h"
+#include "./ui/ui_constants.h"
 //Empirical
 #include "web/web.h"
 #include "tools/Random.h"

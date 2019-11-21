@@ -1,5 +1,5 @@
-#ifndef BACKGAMMON_DIE_H
-#define BACKGAMMON_DIE_H
+#ifndef BACKGAMMON_UI_DIE_H
+#define BACKGAMMON_UI_DIE_H
 
 #include "web/web.h"
 
