@@ -1,34 +1,13 @@
-////    Data collection via browser-based Backgammon against a basic AI agent
+////    Human controlled Backgammon agent that renders to a web browser
 ////    Part of a term project for MSU's CSE 841 - Artificial Intelligence
 ////    Austin Ferguson - 2019
 
-// Local
-#include "./backgammon.h"
-#include "./agent_human_new.h"
-#include "./agent_random.h"
-#include "./ui_test.h"
-//Empirical
-#include "tools/Random.h"
-
-//MyAnimate player;
-BackgammonAgent_Human  agent_1;
-BackgammonAgent_Random agent_2;
-BackgammonGame game;
-int main(){
-    emp::Random random;
-    agent_2.SetRandomSeed(12);
-    game.AttachAgent(&agent_1);
-    game.AttachAgent(&agent_2);
-    game.Start(true);
-    return 0;
-}
+#ifndef BACKGAMMON_AGENT_HUMAN_H
+#define BACKGAMMON_AGENT_HUMAN_H
 
 
-
-
-
-/*
 //Local 
+#include "./agent_base.h"
 #include "./ui/token.h"
 #include "./ui/triangle.h"
 #include "./ui/die.h"
@@ -39,13 +18,13 @@ int main(){
 //Standard
 #include <cmath>
 #include <string>
+#include <queue>
 
 //TODO: Pull out some vars as constants
-class AnimationController : public emp::web::Animate{
-private:
+class BackgammonAgent_Human : public BackgammonAgent_Base, public emp::web::Animate{
+private:    
     emp::web::Document doc;
     emp::web::Canvas canvas;
-    emp::Random rand;
     size_t canvas_width = 800;
     size_t canvas_height = 600;
     emp::web::CanvasPolygon triangle_upper_shape, triangle_lower_shape;
@@ -54,10 +33,12 @@ private:
     std::string color_board = "#e1cf9f";
     std::string color_player_1 = "#aa5522";
     std::string color_player_2 = "#555555";
+
     emp::vector<Token> token_vec_player_1;
     emp::vector<Token> token_vec_player_2;
     emp::vector<Triangle> triangle_vec;
     emp::vector<Die> dice_vec;
+
     int selected_token_idx = -1;
     int selected_triangle_idx = -1;
     double token_radius = canvas_width / 40;
@@ -68,9 +49,10 @@ private:
     size_t tokens_finished_player_2 = 0;
     size_t tokens_off_player_1 = 0;
     size_t tokens_off_player_2 = 0;
+    bool game_over = false;
+
     std::ostringstream oss;
     bool do_draw_goal = false;
-    bool game_over = false;
     // Tweening
     size_t tween_token_idx;
     double tween_start_x, tween_start_y, tween_end_x, tween_end_y; 
@@ -78,6 +60,100 @@ private:
     double tween_time_max = 500; //in ms
     double tween_time_cur = 0;
     double tween_time_start = 0;
+    
+    BackgammonState cur_state;
+    std::function<void(BackgammonMove)> cur_callback;
+    std::queue<BackgammonMove> pending_moves;
+    size_t last_turn_count = 0;
+    
+    virtual void PromptTurn(
+            const BackgammonState& state, 
+            std::function<void(BackgammonMove)> callback) override{
+        cur_state = BackgammonState(state);
+        cur_callback = callback;
+    }
+
+    virtual void Notify(
+            const emp::vector<BackgammonMove>& moves, 
+            emp::vector<size_t> dice_vals) override{
+        UpdateDice(dice_vals);
+        for(BackgammonMove move : moves){
+            pending_moves.push(move); 
+        }
+    }
+
+    void UpdateFromState(){
+        doc << "Updating from state!<br/>";
+        emp::vector<size_t> dice_vals;
+        dice_vals.push_back(cur_state.dice_1);
+        dice_vals.push_back(cur_state.dice_2);
+        if(cur_state.dice_1 == cur_state.dice_2){
+            dice_vals.push_back(cur_state.dice_1);
+            dice_vals.push_back(cur_state.dice_2);
+        }
+        UpdateDice(dice_vals);
+        if(cur_state.dice_1 == cur_state.dice_2){
+            for(size_t i = cur_state.dice_left; i < 4; ++i)
+                dice_vec[i].SetActive(false);
+        }
+        else{
+            dice_vec[0].SetActive(!cur_state.dice_1_used);
+            dice_vec[1].SetActive(!cur_state.dice_2_used);
+        }
+        dice_1 = cur_state.dice_1;
+        dice_2 = cur_state.dice_2;
+        dice_1_used = cur_state.dice_1_used;
+        dice_2_used = cur_state.dice_2_used;
+        dice_left = cur_state.dice_left;
+        last_turn_count = cur_state.turn_count; 
+    }
+
+    void DoNextMove(){
+        BackgammonMove move = pending_moves.front();
+        pending_moves.pop();
+        doc << move.start << " (" << triangle_vec[move.start - 1].GetTopTokenId() << ") -> ";
+        doc << move.end << "<br/>";
+        MoveToken(triangle_vec[move.start - 1].GetTopTokenId(), move.end - 1);
+    }
+
+    void SendMove(size_t token_idx, size_t triangle_idx){
+        size_t orig_triangle_idx = token_vec_player_1[token_idx].GetTriangleId();
+        cur_callback(BackgammonMove(orig_triangle_idx + 1, triangle_idx + 1));
+    }
+
+    void UpdateDice(emp::vector<size_t> dice_vals){
+        dice_vec[0].SetValue(dice_vals[0]);
+        dice_vec[0].SetActive(true);
+        dice_vec[0].SetVisible(true);
+        dice_vec[1].SetValue(dice_vals[1]);
+        dice_vec[1].SetActive(true);
+        dice_vec[1].SetVisible(true);
+        if(dice_vals.size() == 4 && dice_vals[2] != 0 && dice_vals[3] != 0){
+            dice_vec[2].SetValue(dice_vals[2]);
+            dice_vec[2].SetActive(true);
+            dice_vec[2].SetVisible(true);
+            dice_vec[3].SetValue(dice_vals[3]);
+            dice_vec[3].SetActive(true);
+            dice_vec[3].SetVisible(true);
+        }
+        else{
+            dice_vec[2].SetActive(false);
+            dice_vec[2].SetVisible(false);
+            dice_vec[3].SetActive(false);
+            dice_vec[3].SetVisible(false);
+        }
+    }   
+    
+    void SpendDice(size_t distance){
+        for(size_t i = 3; i >= 0; --i){
+            if(dice_vec[i].GetVisible() && dice_vec[i].GetActive()){
+                if(dice_vec[i].GetValue() == distance){
+                    dice_vec[i].SetActive(false);
+                    break;
+                }
+            }
+        }
+    }
 
     // Setup all necessary variables for the triangles on the game board
     void InitTriangles(double width, double height){
@@ -204,6 +280,7 @@ private:
     } 
     // Draw the dice appropriately
     void DrawDice(){
+        /*
         if(dice_1 == dice_2){
             dice_vec[0].SetActive(dice_left > 0);
             dice_vec[1].SetActive(dice_left > 1);
@@ -214,6 +291,7 @@ private:
             dice_vec[0].SetActive(!dice_1_used);
             dice_vec[1].SetActive(!dice_2_used);
         }
+        */
         for(Die & die : dice_vec){
             die.Render(canvas);
         }
@@ -252,10 +330,13 @@ private:
     }    
     // Callback function that determines what we do when the canvas updates
     void Update(double delta_time){
-        if(dice_1_used && dice_2_used && dice_left == 0)
-            RollDice();
         if(is_tweening)
             UpdateTween();
+        else if(pending_moves.size() > 0)
+            DoNextMove();
+        else if(cur_state.turn_count > last_turn_count){
+            UpdateFromState();
+        }
         if(tokens_finished_player_1 >= 15 || tokens_finished_player_2)
             game_over = true;
         canvas.Clear();
@@ -297,7 +378,8 @@ private:
         // If a valid triangle was selected, move! 
         if(selected_triangle_idx != -1){
             if(selected_token_idx != -1 && triangle_vec[selected_triangle_idx].GetIsOption()) 
-                MoveToken(selected_token_idx, selected_triangle_idx);
+                SendMove(selected_token_idx, selected_triangle_idx);
+                //MoveToken(selected_token_idx, selected_triangle_idx);
             else{
                 int top_token_id = triangle_vec[selected_triangle_idx].GetTopTokenId();
                 if (top_token_id >= 0 && 
@@ -374,30 +456,6 @@ private:
         }
         return true;
     }   
-    // Roll two d6's.
-    void RollDice(){
-        dice_1 =  rand.GetUInt(1, 7);
-        dice_2 =  rand.GetUInt(1, 7);
-        dice_1_used = false;
-        dice_2_used = false;
-        dice_left = 2;
-        dice_vec[0].SetValue(dice_1);
-        dice_vec[1].SetValue(dice_2);
-        //doc << "(" << dice_1 << ", " << dice_2 << ") "; 
-        if(dice_1 == dice_2){
-            dice_left = 4;
-            dice_1_used = true;
-            dice_2_used = true;
-            dice_vec[2].SetValue(dice_1);
-            dice_vec[3].SetValue(dice_1);
-            dice_vec[2].SetVisible(true);
-            dice_vec[3].SetVisible(true);
-        }
-        else{
-            dice_vec[2].SetVisible(false);
-            dice_vec[3].SetVisible(false);
-        }      
-    }
     // Resets all triangles to their original colors
     void ClearTriangleColors(){
         for(Triangle & triangle : triangle_vec){
@@ -414,6 +472,24 @@ private:
     // Move the specified token to the specified triangle
     void MoveToken(int token_idx, int triangle_idx){
         if(token_idx != -1 && triangle_idx != -1){
+            if(triangle_vec[triangle_idx].GetControllingPlayerId() == 2){
+                token_vec_player_2[triangle_vec[triangle_idx].GetTopTokenId()]
+                            .SetActive(false);
+                    triangle_vec[triangle_idx].RemoveToken();
+                    tokens_off_player_2++;
+                }
+                triangle_vec[token_vec_player_1[token_idx].GetTriangleId()].RemoveToken(); 
+                SpendDice(abs((int)(token_vec_player_1[token_idx].GetTriangleId() - triangle_idx)));
+                StartTween(token_idx, triangle_idx);
+                token_vec_player_1[token_idx].SetTriangleId(triangle_idx);
+                triangle_vec[triangle_idx].AddToken(token_idx, 1); 
+                selected_token_idx = -1;
+                selected_triangle_idx = -1;
+                ClearTriangleColors();
+                ClearTokenColors();
+        }
+}
+/*
             if(triangle_vec[triangle_idx].GetIsOption()){
                 bool valid_move = false;
                 size_t cur_triangle_idx = token_vec_player_1[token_idx].GetTriangleId();
@@ -460,6 +536,7 @@ private:
             }
         }
     }
+*/
     // Starts a token moving
     void StartTween(size_t token_idx, size_t triangle_idx){
         tween_time_cur = 0.0;
@@ -555,11 +632,11 @@ private:
     }    
 
 public :
-    AnimationController() : 
+    BackgammonAgent_Human() : 
             doc("emp_base"),
-            rand(), 
             triangle_upper_shape(0,0),
             triangle_lower_shape(0,0){
+        EM_ASM(console.log('Test!'););
         // Initialize the document and canvas
         canvas = doc.AddCanvas(canvas_width, canvas_height, "test_canvas");
         doc << "<br/>";
@@ -574,19 +651,16 @@ public :
         oss << (int)token_radius << "px foo";
         // Set up the game board
         InitTriangles(canvas_width / 15.0, canvas_height / 3.0);
-        PlaceInitialTokens_Runoff();
+        PlaceInitialTokens();
         InitDice();
-        // Get the player's initial dice roll!
-        RollDice();
         // Draw the screen!
         Render();
         // Enable automatic canvas redrawing
         Start();
     }
+    void Print(std::string s){
+        doc << s; 
+    }
 };
 
-AnimationController anim;
-int main(){
-
-}
-*/
+#endif

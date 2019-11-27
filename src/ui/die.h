@@ -80,6 +80,12 @@ public:
     void SetVisible(bool b){
         is_visible = b;
     }
+    bool GetActive(){
+        return is_active;
+    }
+    bool GetVisible(){
+        return is_visible;
+    }
     size_t GetValue(){
         return value;
     }

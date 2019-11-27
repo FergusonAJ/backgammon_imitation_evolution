@@ -119,6 +119,11 @@ public:
     size_t GetNumTokens(){
         return token_id_stack.size();
     }
+    void ClearAllTokens(){
+        while(!token_id_stack.empty())
+            token_id_stack.pop();
+        controlling_player_id = -1;
+    }
 };
 
 #endif
