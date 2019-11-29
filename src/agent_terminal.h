@@ -13,7 +13,6 @@
 #include <string>
 #include <iostream>
 
-//TODO: Pull out some vars as constants
 class BackgammonAgent_Terminal : public BackgammonAgent_Base{
 private:    
     virtual void PromptTurn(

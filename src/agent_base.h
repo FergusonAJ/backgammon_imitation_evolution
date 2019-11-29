@@ -15,6 +15,9 @@
 #include <functional>
 
 class BackgammonAgent_Base{
+protected:
+    std::function<BackgammonState(const BackgammonState&, const BackgammonMove&)> test_move_func;
+    size_t agent_id;    
 public:
     // Gives agent current state and asks for a callback with the agent's move
     virtual void PromptTurn(
@@ -25,6 +28,13 @@ public:
             const emp::vector<BackgammonMove>& moves, const emp::vector<int>& dice_vals) = 0;
     // Compiler gives a warning if this isn't here
     virtual ~BackgammonAgent_Base(){
+    }
+   
+    void SetAgentId(size_t id){
+        agent_id = id;
+    }    
+    void SetTestMoveFunc(std::function<BackgammonState(const BackgammonState&, const BackgammonMove&)> f){
+        test_move_func = f;
     }
 };
 

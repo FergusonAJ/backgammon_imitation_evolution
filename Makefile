@@ -34,8 +34,8 @@ default: test-game
 CXX := $(CXX_native)
 CFLAGS_web := $(CFLAGS_web_opt)
 
-#debug: CFLAGS_native := $(CFLAGS_native_debug)
-#debug: test-game
+debug: CFLAGS_native := $(CFLAGS_native_debug)
+debug: test-game
 #debug: CFLAGS_web := $(CFLAGS_web_debug)
 #debug: data-collection
 

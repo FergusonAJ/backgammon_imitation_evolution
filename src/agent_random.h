@@ -13,7 +13,6 @@
 #include <string>
 #include <iostream>
 
-//TODO: Pull out some vars as constants
 class BackgammonAgent_Random : public BackgammonAgent_Base{
 private: 
     emp::Random rand;
@@ -24,7 +23,7 @@ private:
         if(!rand_seeded){
             std::cout << std::endl;
             std::cout << std::endl;
-            std::cout << "ERROR: Random agent's random seed was not set." << std::endl;
+            std::cerr << "ERROR: Random agent's random seed was not set." << std::endl;
             exit(-1);
         }
         callback(state.possible_moves[rand.GetUInt(0, state.possible_moves.size())]);

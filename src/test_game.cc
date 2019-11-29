@@ -6,13 +6,14 @@
 #include "./backgammon.h"
 #include "./agent_terminal.h"
 #include "./agent_random.h"
+#include "./agent_weighted.h"
 //Empirical
 #include "tools/Random.h"
 
 //MyAnimate player;
 //BackgammonAgent_Terminal agent_1;
-BackgammonAgent_Random agent_1;
-BackgammonAgent_Random agent_2;
+BackgammonAgent_Weighted agent_1;
+BackgammonAgent_Weighted agent_2;
 BackgammonGame game;
 int main(){
     emp::Random random;
@@ -31,6 +32,21 @@ int main(){
     game.AttachAgent(&agent_1);
     agent_2.SetRandomSeed(random.GetUInt());
     game.AttachAgent(&agent_2);
+    
+    agent_1.SetWeight_MostForward(  0.0);
+    agent_1.SetWeight_AvgForward(   0.0);
+    agent_1.SetWeight_LeastForward( 1.0);
+    agent_1.SetWeight_Aggressive(   0.0);
+    agent_1.SetWeight_WideDefense(  0.0);
+    agent_1.SetWeight_TallDefense(  0.0);
+
+    agent_2.SetWeight_MostForward(  0.0);
+    agent_2.SetWeight_AvgForward(   0.0);
+    agent_2.SetWeight_LeastForward( 0.0);
+    agent_2.SetWeight_Aggressive(   0.0);
+    agent_2.SetWeight_WideDefense(  0.0);
+    agent_2.SetWeight_TallDefense(  0.0);
+
     for(size_t game_id = 0; game_id < num_iters; ++game_id){
         game.Restart();
         if(game.GetState().cur_agent == 1)

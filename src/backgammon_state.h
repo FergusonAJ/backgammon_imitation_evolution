@@ -37,6 +37,21 @@ public:
         dice_vals(),
         possible_moves(){
     }
+    /*
+    BackgammonState(const BackgammonState& other):
+            tokens_per_point(other.tokens_per_point),
+            dice_vals(other.dice_vals), 
+            tokens_finished_agent_1(other.tokens_finished_agent_1),
+            tokens_finished_agent_2(other.tokens_finished_agent_2),
+            tokens_off_agent_1(other.tokens_off_agent_1),
+            tokens_off_agent_2(other.tokens_off_agent_2),
+            game_over(other.game_over),
+            cur_agent(other.cur_agent),
+            turn_count(other.turn_count),
+            winner_id(other.winner_id),
+            possible_moves(other.possible_moves){
+    }
+    */
 };
 
 
