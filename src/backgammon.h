@@ -385,7 +385,6 @@ public:
         rand(), 
         state(){
         state.dice_vals.resize(4, 0);
-        Restart();
     }
     // Sets the RNG seed
     void SetSeed(int seed){

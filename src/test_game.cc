@@ -3,6 +3,7 @@
 ////    Austin Ferguson - 2019
 
 // Local
+#include "./test_game_config.h"
 #include "./backgammon.h"
 #include "./agent_terminal.h"
 #include "./agent_random.h"
@@ -10,18 +11,112 @@
 #include "./agent_pubeval.h"
 //Empirical
 #include "tools/Random.h"
+#include "config/ArgManager.h"
+#include "config/command_line.h"
 
-//MyAnimate player;
-//BackgammonAgent_Terminal agent_1;
-BackgammonAgent_Weighted agent_1;
-BackgammonAgent_Weighted agent_2;
-BackgammonAgent_PubEval agent_3;
-BackgammonAgent_Terminal agent_terminal;
+
+BackgammonAgent_Weighted    agent_1_weighted;
+BackgammonAgent_PubEval     agent_1_pubeval;
+BackgammonAgent_Terminal    agent_1_terminal;
+BackgammonAgent_Random      agent_1_random;
+BackgammonAgent_Weighted    agent_2_weighted;
+BackgammonAgent_PubEval     agent_2_pubeval;
+BackgammonAgent_Terminal    agent_2_terminal;
+BackgammonAgent_Random      agent_2_random;
 BackgammonGame game;
-int main(){
-    emp::Random random;
+
+int main(int argc, char* argv[]){
+    std::string config_fname = "test_game_config.cfg";
+    auto args = emp::cl::ArgManager(argc, argv);
+    std::string optional_filename;
+    int filename_res = args.UseArg<std::string>("-f", optional_filename);
+    if(filename_res == 1){
+        config_fname = optional_filename;
+    }
+    BackgammonTestConfig config;
+    config.Read(config_fname);
+    std::cout << "Looking for config: " << config_fname << std::endl;
+    if (args.ProcessConfigOptions(config, std::cout, config_fname, "config-macros.h") 
+            == false) 
+        exit(0);
+    if (args.TestUnknown() == false) 
+        exit(0); // If there are leftover args, throw an error. 
+
+    // Write to screen how the experiment is configured
+    std::cout << "==============================" << std::endl;
+    std::cout << "|    Current configuration   |" << std::endl;
+    std::cout << "==============================" << std::endl;
+    config.Write(std::cout);
+    std::cout << "==============================\n" << std::endl;
+
+    // Set random seeds
+    emp::Random random(config.SEED());    
+    game.SetSeed(config.SEED());
     
-    size_t num_iters = 10000;
+    int agent_1_seed = config.AGENT_1_SEED();
+    if(agent_1_seed < 0){
+        agent_1_random.SetRandomSeed(config.SEED());
+        agent_1_weighted.SetRandomSeed(config.SEED());
+    }
+    else{
+        agent_1_random.SetRandomSeed(agent_1_seed);
+        agent_1_weighted.SetRandomSeed(agent_1_seed);
+    }
+    int agent_2_seed = config.AGENT_2_SEED();
+    if(agent_2_seed < 0){
+        agent_2_random.SetRandomSeed(config.SEED());
+        agent_2_weighted.SetRandomSeed(config.SEED());
+    }
+    else{    
+        agent_2_random.SetRandomSeed(agent_1_seed);
+        agent_2_weighted.SetRandomSeed(agent_1_seed);
+    }
+    
+    // Set agent weights
+    agent_1_weighted.SetWeight_MostForward(  config.AGENT_1_WEIGHT_MOST_FORWARD());
+    agent_1_weighted.SetWeight_AvgForward(   config.AGENT_1_WEIGHT_AVG_FORWARD());
+    agent_1_weighted.SetWeight_LeastForward( config.AGENT_1_WEIGHT_LEAST_FORWARD());
+    agent_1_weighted.SetWeight_Aggressive(   config.AGENT_1_WEIGHT_AGGRESSIVE());
+    agent_1_weighted.SetWeight_WideDefense(  config.AGENT_1_WEIGHT_WIDE_DEFENSE());
+    agent_1_weighted.SetWeight_TallDefense(  config.AGENT_1_WEIGHT_TALL_DEFENSE());
+
+    agent_2_weighted.SetWeight_MostForward(  config.AGENT_2_WEIGHT_MOST_FORWARD());
+    agent_2_weighted.SetWeight_AvgForward(   config.AGENT_2_WEIGHT_AVG_FORWARD());
+    agent_2_weighted.SetWeight_LeastForward( config.AGENT_2_WEIGHT_LEAST_FORWARD());
+    agent_2_weighted.SetWeight_Aggressive(   config.AGENT_2_WEIGHT_AGGRESSIVE());
+    agent_2_weighted.SetWeight_WideDefense(  config.AGENT_2_WEIGHT_WIDE_DEFENSE());
+    agent_2_weighted.SetWeight_TallDefense(  config.AGENT_2_WEIGHT_TALL_DEFENSE());
+
+    // Attach the specified agents
+    std::string agent_1_type = config.AGENT_1_TYPE();
+    if(agent_1_type == "RANDOM")
+        game.AttachAgent(&agent_1_random);
+    else if(agent_1_type == "TERMINAL")
+        game.AttachAgent(&agent_1_terminal);
+    else if(agent_1_type == "WEIGHTED")
+        game.AttachAgent(&agent_1_weighted);
+    else if(agent_1_type == "PUBEVAL")
+        game.AttachAgent(&agent_1_pubeval);
+    else{
+        std::cerr << "ERROR: Unspecified type for agent 1!" << std::endl;
+        exit(-1);
+    }
+    std::string agent_2_type = config.AGENT_2_TYPE();
+    if(agent_2_type == "RANDOM")
+        game.AttachAgent(&agent_2_random);
+    else if(agent_2_type == "TERMINAL")
+        game.AttachAgent(&agent_2_terminal);
+    else if(agent_2_type == "WEIGHTED")
+        game.AttachAgent(&agent_2_weighted);
+    else if(agent_2_type == "PUBEVAL")
+        game.AttachAgent(&agent_2_pubeval);
+    else{
+        std::cerr << "ERROR: Unspecified type for agent 2!" << std::endl;
+        exit(-2);
+    }
+    
+    // Set up bookkeeping 
+    size_t num_iters = config.NUM_MATCHES();
     size_t wins_agent_1 = 0;
     size_t wins_agent_2 = 0;
     size_t starts_agent_1 = 0;
@@ -30,25 +125,6 @@ int main(){
     double avg_off_agent_2 = 0;
     double avg_finished_agent_1 = 0;
     double avg_finished_agent_2 = 0;
-
-    agent_1.SetRandomSeed(random.GetUInt());
-    agent_2.SetRandomSeed(random.GetUInt());
-    game.AttachAgent(&agent_3);
-    game.AttachAgent(&agent_1);
-    
-    agent_1.SetWeight_MostForward(  0.0);
-    agent_1.SetWeight_AvgForward(   0.0);
-    agent_1.SetWeight_LeastForward( 0.0);
-    agent_1.SetWeight_Aggressive(   0.0);
-    agent_1.SetWeight_WideDefense(  0.0);
-    agent_1.SetWeight_TallDefense(  1.0);
-
-    agent_2.SetWeight_MostForward(  0.0);
-    agent_2.SetWeight_AvgForward(   0.0);
-    agent_2.SetWeight_LeastForward( 0.0);
-    agent_2.SetWeight_Aggressive(   0.0);
-    agent_2.SetWeight_WideDefense(  0.0);
-    agent_2.SetWeight_TallDefense(  0.0);
 
     for(size_t game_id = 0; game_id < num_iters; ++game_id){
         game.Restart();
