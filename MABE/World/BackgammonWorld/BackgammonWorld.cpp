@@ -19,6 +19,7 @@
 #include "../../../src/backgammon.h"
 #include "../../../src/agent_brain.h"
 #include "../../../src/agent_random.h"
+#include "../../../src/agent_pubeval.h"
 // Empirical
 // Standard Lib
 
@@ -64,11 +65,11 @@ void BackgammonWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze,
     // Create the game and agents
     BackgammonGame game;
     BackgammonAgent_Brain agent_1(brain);
-    BackgammonAgent_Random agent_2; 
+    BackgammonAgent_PubEval agent_2; 
     // Setup and attach agents
     agent_1.SetRandomSeed(Random::getInt(100,1000000000));
     game.AttachAgent(&agent_1);
-    agent_2.SetRandomSeed(Random::getInt(100,1000000000));
+    //agent_2.SetRandomSeed(Random::getInt(100,1000000000));
     game.AttachAgent(&agent_2);
    
     int num_matches = numberOfMatchesPL->get(PT); 
