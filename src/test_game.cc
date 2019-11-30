@@ -7,6 +7,7 @@
 #include "./agent_terminal.h"
 #include "./agent_random.h"
 #include "./agent_weighted.h"
+#include "./agent_pubeval.h"
 //Empirical
 #include "tools/Random.h"
 
@@ -14,6 +15,8 @@
 //BackgammonAgent_Terminal agent_1;
 BackgammonAgent_Weighted agent_1;
 BackgammonAgent_Weighted agent_2;
+BackgammonAgent_PubEval agent_3;
+BackgammonAgent_Terminal agent_terminal;
 BackgammonGame game;
 int main(){
     emp::Random random;
@@ -29,16 +32,16 @@ int main(){
     double avg_finished_agent_2 = 0;
 
     agent_1.SetRandomSeed(random.GetUInt());
-    game.AttachAgent(&agent_1);
     agent_2.SetRandomSeed(random.GetUInt());
-    game.AttachAgent(&agent_2);
+    game.AttachAgent(&agent_3);
+    game.AttachAgent(&agent_1);
     
     agent_1.SetWeight_MostForward(  0.0);
     agent_1.SetWeight_AvgForward(   0.0);
-    agent_1.SetWeight_LeastForward( 1.0);
+    agent_1.SetWeight_LeastForward( 0.0);
     agent_1.SetWeight_Aggressive(   0.0);
     agent_1.SetWeight_WideDefense(  0.0);
-    agent_1.SetWeight_TallDefense(  0.0);
+    agent_1.SetWeight_TallDefense(  1.0);
 
     agent_2.SetWeight_MostForward(  0.0);
     agent_2.SetWeight_AvgForward(   0.0);

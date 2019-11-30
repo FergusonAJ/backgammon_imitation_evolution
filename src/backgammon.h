@@ -90,13 +90,13 @@ private:
         agent_2->Notify({move}, state.dice_vals);
         if(!AdvanceStep()){
             if(PRINT_OUTPUT)
-                PrintBoard(); 
+                PrintBoard(state); 
             return;
         }
         if(PRINT_OUTPUT)
-            PrintBoard(); 
+            PrintBoard(state); 
         if(GetRemainingTokenCount(1, state) > 15 || GetRemainingTokenCount(2, state) > 15){
-            std::cout << "Hit" << std::endl;
+            std::cout << "ERROR: Extra tokens on the board!" << std::endl;
             exit(-1);
         }
         if(play_until_end)
@@ -151,6 +151,8 @@ private:
             }
         }
         UpdatePossibleMoves();
+        state.in_bearoff_agent_1 = CheckBearoff(state, 1);
+        state.in_bearoff_agent_2 = CheckBearoff(state, 2);
         // If that agent can't make a move, try the other until we get something that works!
         while(state.possible_moves.size() == 0){
             state.turn_count++;
@@ -161,6 +163,8 @@ private:
                     " ########" << std::endl; 
             }
             UpdatePossibleMoves();
+            state.in_bearoff_agent_1 = CheckBearoff(state, 1);
+            state.in_bearoff_agent_2 = CheckBearoff(state, 2);
         }
         return true; 
     }
@@ -195,7 +199,7 @@ private:
             std::cout << std::endl;
             std::cout << std::endl;
         }
-        if(GetRemainingTokenCount(1, s)){
+        if(GetRemainingTokenCount(1, s) == 0){
             s.winner_id = 1;
             if(PRINT_OUTPUT && !suppress_prints){
                 std::cout << "#################################" << std::endl;
@@ -203,7 +207,7 @@ private:
                 std::cout << "#################################" << std::endl;
             }
         }
-        else if(GetRemainingTokenCount(2, s)){
+        else if(GetRemainingTokenCount(2, s) == 0){
             s.winner_id = 2;
             if(PRINT_OUTPUT && !suppress_prints){
                 std::cout << "#################################" << std::endl;
@@ -268,44 +272,6 @@ private:
         return oss.str();
            
     }
-    // Prints the current board state
-    void PrintBoard(){
-        // Print upper point labels
-        for(size_t point_idx = 13; point_idx <= 18; ++point_idx)
-            std::cout << point_idx << " ";
-        std::cout << "XX ";
-        for(size_t point_idx = 19; point_idx < 25; ++point_idx)
-            std::cout << point_idx << " ";
-        std::cout << std::endl;
-        // Print upper token counts
-        for(size_t point_idx = 13; point_idx <= 18; ++point_idx)
-            std::cout << GetTokenCountString(state.tokens_per_point[point_idx]) << " ";
-        std::cout << "XX ";
-        for(size_t point_idx = 19; point_idx < 25; ++point_idx)
-            std::cout << GetTokenCountString(state.tokens_per_point[point_idx]) << " ";
-        std::cout << std::endl;
-        std::cout << std::endl;
-        std::cout << std::endl;
-        // Print lower token counts
-        for(size_t point_idx = 12; point_idx > 6; --point_idx)
-            std::cout << GetTokenCountString(state.tokens_per_point[point_idx]) << " ";
-        std::cout << "XX ";
-        for(size_t point_idx = 6; point_idx > 0; --point_idx)
-            std::cout << GetTokenCountString(state.tokens_per_point[point_idx]) << " ";
-        std::cout << std::endl;
-        //Print lower point labels
-        for(size_t point_idx = 12; point_idx > 6; --point_idx)
-            std::cout << (point_idx >= 10 ? "" : "0") << point_idx << " ";
-        std::cout << "XX ";
-        for(size_t point_idx = 6; point_idx > 0; --point_idx)
-            std::cout << "0" << point_idx << " ";
-        std::cout << std::endl;
-        std::cout << "Agent 1: " << state.tokens_off_agent_1 << " off, " << 
-                state.tokens_finished_agent_1 << " finished" << std::endl;
-        std::cout << "Agent 2: " << state.tokens_off_agent_2 << " off, " << 
-                state.tokens_finished_agent_2 << " finished" << std::endl;
-        std::cout << std::endl;
-    } 
     // Converts the dice as it's stored to something more useful
     emp::vector<int> GetDiceVals(){
         emp::vector<int> vals(state.dice_vals);
@@ -360,7 +326,7 @@ private:
                                 state.possible_moves.emplace_back(point_idx, point_idx + die_val);
                                 used_die_mask[die_val] = 1;
                             }
-                            else if(point_idx + die_val > 24 && CheckBearoff()){
+                            else if(point_idx + die_val > 24 && CheckBearoff(state)){
                                 state.possible_moves.emplace_back(point_idx, -1 * die_val);
                                 used_die_mask[die_val] = 1;
                             }
@@ -371,7 +337,7 @@ private:
                                 state.possible_moves.emplace_back(point_idx, point_idx - die_val);
                                 used_die_mask[die_val] = 1;
                             } 
-                            else if(point_idx - die_val <= 0 && CheckBearoff()){
+                            else if(point_idx - die_val <= 0 && CheckBearoff(state)){
                                 state.possible_moves.emplace_back(point_idx, -1 * die_val);
                                 used_die_mask[die_val] = 1;
                             }
@@ -391,20 +357,22 @@ private:
         }
     }
     // Checks to see if the current agent is in the "bear-off" stage (all tokens in their home)
-    bool CheckBearoff(){
-        if(state.cur_agent == 1){
-            if(state.tokens_off_agent_1 > 0)
+    bool CheckBearoff(const BackgammonState& s, int agent_id = -1){
+        if(agent_id == -1)
+            agent_id = s.cur_agent;
+        if(agent_id == 1){
+            if(s.tokens_off_agent_1 > 0)
                 return false;
             for(size_t point_idx = 1; point_idx <= 18; ++point_idx){
-                if(state.tokens_per_point[point_idx] > 0)
+                if(s.tokens_per_point[point_idx] > 0)
                     return false;
             }
         }
         else{
-            if(state.tokens_off_agent_2 > 0)
+            if(s.tokens_off_agent_2 > 0)
                 return false;
             for(size_t point_idx = 7; point_idx <= 24; ++point_idx){
-                if(state.tokens_per_point[point_idx] < 0)
+                if(s.tokens_per_point[point_idx] < 0)
                     return false;
             }
         }
@@ -465,7 +433,7 @@ public:
         play_until_end = b;
         UpdatePossibleMoves();
         if(PRINT_OUTPUT)
-            PrintBoard();
+            PrintBoard(state);
         NextTurn();
     } 
     // Advance play by one turn 
@@ -477,6 +445,44 @@ public:
         BackgammonState new_state(state);
         return new_state;
     }
+    // Prints the given board state
+    void PrintBoard(const BackgammonState& s){
+        // Print upper point labels
+        for(size_t point_idx = 13; point_idx <= 18; ++point_idx)
+            std::cout << point_idx << " ";
+        std::cout << "XX ";
+        for(size_t point_idx = 19; point_idx < 25; ++point_idx)
+            std::cout << point_idx << " ";
+        std::cout << std::endl;
+        // Print upper token counts
+        for(size_t point_idx = 13; point_idx <= 18; ++point_idx)
+            std::cout << GetTokenCountString(s.tokens_per_point[point_idx]) << " ";
+        std::cout << "XX ";
+        for(size_t point_idx = 19; point_idx < 25; ++point_idx)
+            std::cout << GetTokenCountString(s.tokens_per_point[point_idx]) << " ";
+        std::cout << std::endl;
+        std::cout << std::endl;
+        std::cout << std::endl;
+        // Print lower token counts
+        for(size_t point_idx = 12; point_idx > 6; --point_idx)
+            std::cout << GetTokenCountString(s.tokens_per_point[point_idx]) << " ";
+        std::cout << "XX ";
+        for(size_t point_idx = 6; point_idx > 0; --point_idx)
+            std::cout << GetTokenCountString(s.tokens_per_point[point_idx]) << " ";
+        std::cout << std::endl;
+        //Print lower point labels
+        for(size_t point_idx = 12; point_idx > 6; --point_idx)
+            std::cout << (point_idx >= 10 ? "" : "0") << point_idx << " ";
+        std::cout << "XX ";
+        for(size_t point_idx = 6; point_idx > 0; --point_idx)
+            std::cout << "0" << point_idx << " ";
+        std::cout << std::endl;
+        std::cout << "Agent 1: " << s.tokens_off_agent_1 << " off, " << 
+                s.tokens_finished_agent_1 << " finished" << std::endl;
+        std::cout << "Agent 2: " << s.tokens_off_agent_2 << " off, " << 
+                s.tokens_finished_agent_2 << " finished" << std::endl;
+        std::cout << std::endl;
+    } 
 };
 
 #endif

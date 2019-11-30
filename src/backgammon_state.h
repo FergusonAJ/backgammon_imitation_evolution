@@ -28,6 +28,8 @@ public:
     size_t tokens_off_agent_1 = 0;
     size_t tokens_off_agent_2 = 0;
     bool game_over = false;
+    bool in_bearoff_agent_1 = false;
+    bool in_bearoff_agent_2 = false;
     size_t cur_agent = 1;
     size_t turn_count = 0;
     int winner_id = -1;
