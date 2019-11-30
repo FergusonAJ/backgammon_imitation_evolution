@@ -427,6 +427,22 @@ public:
         );
         return true;
     }
+    // Attaches an agent to play the game
+    void ReplaceAgent(BackgammonAgent_Base* agent, size_t agent_id){
+        if(agent_id == 1){
+            agent_1 = agent;
+            agent->SetAgentId(1);
+        }
+        else{
+            agent_2 = agent;
+            agent->SetAgentId(2);
+        }
+        agent->SetTestMoveFunc(
+            [this](const BackgammonState& s, const BackgammonMove& move){
+                return this->TryMove(s, move);
+            }
+        );
+    }
     // Starts the game!    
     void Start(bool b = false){
         play_until_end = b;

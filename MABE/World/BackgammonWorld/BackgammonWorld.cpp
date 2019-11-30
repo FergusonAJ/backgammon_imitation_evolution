@@ -64,10 +64,11 @@ void BackgammonWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze,
   for (int r = 0; r < evaluationsPerGenerationPL->get(PT); r++) {
     // Create the game and agents
     BackgammonGame game;
+    game.SetSeed(Global::randomSeedPL->get());
     BackgammonAgent_Brain agent_1(brain);
     BackgammonAgent_PubEval agent_2; 
     // Setup and attach agents
-    agent_1.SetRandomSeed(Random::getInt(100,1000000000));
+    agent_1.SetRandomSeed(Global::randomSeedPL->get());
     game.AttachAgent(&agent_1);
     //agent_2.SetRandomSeed(Random::getInt(100,1000000000));
     game.AttachAgent(&agent_2);
