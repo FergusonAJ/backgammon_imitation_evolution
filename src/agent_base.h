@@ -23,6 +23,7 @@ public:
     virtual void PromptTurn(
             const BackgammonState& state, 
             std::function<void(BackgammonMove)> callback) = 0;
+    
     // Tells the agent about a move that was made
     virtual void Notify(
             const emp::vector<BackgammonMove>& moves, const emp::vector<int>& dice_vals) = 0;

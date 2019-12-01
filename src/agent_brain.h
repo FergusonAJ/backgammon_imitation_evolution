@@ -32,11 +32,9 @@ private:
         
         callback(state.possible_moves[ScoreMoves(state)]);
     }
-
     virtual void Notify(
             const emp::vector<BackgammonMove>& moves, const emp::vector<int>& dice_vals) override{
     }
-    
     size_t ScoreMoves(const BackgammonState& state){
         double cur_score = 0;
         double max_score = 0;
@@ -70,10 +68,18 @@ public :
         rand(),
         brain_ptr(ptr){ 
     }
-
     void SetRandomSeed(int seed){
         rand.ResetSeed(seed);
         rand_seeded = true;
+    }
+    size_t GetMoveIdx(BackgammonState& state){
+        if(!rand_seeded){
+            std::cout << std::endl;
+            std::cout << std::endl;
+            std::cerr << "ERROR: Random agent's random seed was not set." << std::endl;
+            exit(-1);
+        }
+        return ScoreMoves(state);
     }
 };
 

@@ -33,6 +33,7 @@ public:
     size_t cur_agent = 1;
     size_t turn_count = 0;
     int winner_id = -1;
+    int previous_move_idx = -1;
     emp::vector<BackgammonMove> possible_moves;
     BackgammonState():
         tokens_per_point(),

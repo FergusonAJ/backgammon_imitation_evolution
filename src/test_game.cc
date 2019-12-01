@@ -144,6 +144,7 @@ int main(int argc, char* argv[]){
             off_agent_2 += game.GetState().tokens_off_agent_2;
             finished_agent_1 += game.GetState().tokens_finished_agent_1;
             finished_agent_2 += game.GetState().tokens_finished_agent_2;
+            std::cout << "Move idx: " << game.GetState().previous_move_idx << std::endl;
         }
         if(game.GetState().winner_id == 1)
             wins_agent_1++;

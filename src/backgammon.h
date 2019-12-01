@@ -88,6 +88,13 @@ private:
         MoveToken(move, state);
         agent_1->Notify({move}, state.dice_vals);
         agent_2->Notify({move}, state.dice_vals);
+        for(size_t move_idx = 0; move_idx < state.possible_moves.size(); ++move_idx){
+            if(state.possible_moves[move_idx].start == move.start &&
+                    state.possible_moves[move_idx].end == move.end){
+                state.previous_move_idx = move_idx;
+                break;
+            } 
+        }
         if(!AdvanceStep()){
             if(PRINT_OUTPUT)
                 PrintBoard(state); 
@@ -449,7 +456,8 @@ public:
         UpdatePossibleMoves();
         if(PRINT_OUTPUT)
             PrintBoard(state);
-        NextTurn();
+        if(play_until_end)
+            NextTurn();
     } 
     // Advance play by one turn 
     void Step(){

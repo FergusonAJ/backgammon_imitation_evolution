@@ -43,7 +43,6 @@ private:
     virtual void Notify(
             const emp::vector<BackgammonMove>& moves, const emp::vector<int>& dice_vals) override{
     }
-    
     size_t ScoreMoves(const BackgammonState& state){
         double cur_score = 0;
         double max_score = 0;
