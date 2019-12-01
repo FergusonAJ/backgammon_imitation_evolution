@@ -22,11 +22,15 @@ public:
   static std::shared_ptr<ParameterLink<int>> modePL;
   static std::shared_ptr<ParameterLink<int>> numberOfOutputsPL;
   static std::shared_ptr<ParameterLink<int>> numberOfMatchesPL;
+  static std::shared_ptr<ParameterLink<int>> numberOfPredictionMatchesPL;
   static std::shared_ptr<ParameterLink<int>> evaluationsPerGenerationPL;
+  static std::shared_ptr<ParameterLink<double>> scoreScalingFactorPL;
 
   // int mode;
   // int numberOfOutputs;
   // int evaluationsPerGeneration;
+  double score_scaling_factor;
+  int num_matches, num_prediction_matches;
 
   static std::shared_ptr<ParameterLink<std::string>> groupNamePL;
   static std::shared_ptr<ParameterLink<std::string>> brainNamePL;

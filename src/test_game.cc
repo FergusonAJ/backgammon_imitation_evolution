@@ -121,6 +121,7 @@ int main(int argc, char* argv[]){
     size_t wins_agent_2 = 0;
     size_t starts_agent_1 = 0;
     size_t starts_agent_2 = 0;
+    size_t avg_num_turns = 0;
     double avg_off_agent_1 = 0;
     double avg_off_agent_2 = 0;
     double avg_finished_agent_1 = 0;
@@ -144,7 +145,6 @@ int main(int argc, char* argv[]){
             off_agent_2 += game.GetState().tokens_off_agent_2;
             finished_agent_1 += game.GetState().tokens_finished_agent_1;
             finished_agent_2 += game.GetState().tokens_finished_agent_2;
-            std::cout << "Move idx: " << game.GetState().previous_move_idx << std::endl;
         }
         if(game.GetState().winner_id == 1)
             wins_agent_1++;
@@ -154,6 +154,7 @@ int main(int argc, char* argv[]){
         avg_off_agent_2 += (off_agent_2 / game.GetState().turn_count) / num_iters;
         avg_finished_agent_1 += (finished_agent_1 / game.GetState().turn_count) / num_iters;
         avg_finished_agent_2 += (finished_agent_2 / game.GetState().turn_count) / num_iters;
+        avg_num_turns += game.GetState().turn_count;
     }
     std::cout << "Agent 1 starts: " << starts_agent_1 << std::endl;
     std::cout << "Agent 2 starts: " << starts_agent_2 << std::endl;
@@ -163,5 +164,6 @@ int main(int argc, char* argv[]){
     std::cout << "Agent 2 average off: " << avg_off_agent_2 << std::endl;
     std::cout << "Agent 1 average finished: " << avg_finished_agent_1 << std::endl;
     std::cout << "Agent 2 average finished: " << avg_finished_agent_2 << std::endl;
+    std::cout << "Average turns: " << ((double)avg_num_turns) / num_iters << std::endl;
     return 0;
 }

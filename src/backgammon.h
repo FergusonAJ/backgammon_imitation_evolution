@@ -407,6 +407,7 @@ public:
         state.tokens_off_agent_2 = 0;
         state.game_over = false;
         state.winner_id = -1;
+        state.turn_count = 0;
         RollDice();
         while(state.dice_vals[0] == state.dice_vals[1])
             RollDice();

@@ -33,6 +33,9 @@ std::shared_ptr<ParameterLink<int>> BackgammonWorld::numberOfOutputsPL =
 std::shared_ptr<ParameterLink<int>> BackgammonWorld::numberOfMatchesPL =
     Parameters::register_parameter("WORLD_BACKGAMMON-numberOfMatches", 1000,
                                    "number of matches between pairs of brains");
+std::shared_ptr<ParameterLink<int>> BackgammonWorld::numberOfPredictionMatchesPL =
+    Parameters::register_parameter("WORLD_BACKGAMMON-numberOfPredictionMatches", 10,
+                                   "Number of matches for each brain to try and predict each agent");
 std::shared_ptr<ParameterLink<int>> BackgammonWorld::evaluationsPerGenerationPL =
     Parameters::register_parameter("WORLD_BACKGAMMON-evaluationsPerGeneration", 1,
                                    "Number of times to test each Genome per "
@@ -46,10 +49,17 @@ std::shared_ptr<ParameterLink<std::string>> BackgammonWorld::brainNamePL =
     Parameters::register_parameter(
         "WORLD_BACKGAMMON_NAMES-brainNameSpace", (std::string) "root::",
         "namespace for parameters used to define brain");
+std::shared_ptr<ParameterLink<double>> BackgammonWorld::scoreScalingFactorPL =
+    Parameters::register_parameter("WORLD_BACKGAMMON_NAMES-scoreScalingFactor", 1.0, 
+                                   "How to weight the true score");
 
 BackgammonWorld::BackgammonWorld(std::shared_ptr<ParametersTable> PT_)
     : AbstractWorld(PT_) {
 
+
+  score_scaling_factor = scoreScalingFactorPL->get(PT);
+  num_matches = numberOfMatchesPL->get(PT); 
+  num_prediction_matches = numberOfPredictionMatchesPL->get(PT);
   // columns to be added to ave file
   popFileColumns.clear();
   popFileColumns.push_back("score");
@@ -85,7 +95,6 @@ void BackgammonWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze,
     //agent_2.SetRandomSeed(Random::getInt(100,1000000000));
     game.AttachAgent(&agent_2);
    
-    int num_matches = numberOfMatchesPL->get(PT); 
     size_t starts_agent_1 = 0;
     size_t starts_agent_2 = 0;
     size_t wins_agent_1 = 0;
@@ -109,7 +118,7 @@ void BackgammonWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze,
     }
     // Set score where needed
     double score = ((double)wins_agent_1) / ((double)(num_matches));
-    org->dataMap.append("score", score);
+    org->dataMap.append("score", score * score_scaling_factor);
     if (visualize)
       std::cout << "organism with ID " << org->ID << " scored " << score
                 << std::endl;
@@ -121,12 +130,10 @@ void BackgammonWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze,
     game.Restart();
     size_t num_turns = 0;
     double num_correct = 0;
+    double avg_prediction_score = 0;
     size_t brain_predicted_move_idx;
     BackgammonState state;
     for(size_t weight_idx = 0; weight_idx < weight_name_vec.size(); weight_idx++){
-        brain->resetBrain();
-        game.Restart();
-        game.Start();
         // Setup the correct opponent
         agent_weighted.SetWeight_MostForward(weight_name_vec[weight_idx]  == "mostForward" ? 1 : 0);
         agent_weighted.SetWeight_AvgForward(weight_name_vec[weight_idx]   == "avgForward"  ? 1 : 0);
@@ -134,24 +141,31 @@ void BackgammonWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze,
         agent_weighted.SetWeight_Aggressive(weight_name_vec[weight_idx]   == "aggressive"   ? 1 : 0);
         agent_weighted.SetWeight_WideDefense(weight_name_vec[weight_idx]  == "wideDefense" ? 1 : 0);
         agent_weighted.SetWeight_TallDefense(weight_name_vec[weight_idx]  == "tallDefense" ? 1 : 0);
-        num_turns = 0;
-        num_correct = 0;
-        state = game.GetState();
-        while(!state.game_over){
-            if(state.cur_agent == 1){
-                num_turns++;
-                brain_predicted_move_idx = agent_brain.GetMoveIdx(state);
-                game.Step();   
-                state = game.GetState();
-                if(state.previous_move_idx == brain_predicted_move_idx)
-                    num_correct += 1;
+        avg_prediction_score = 0;
+        for(size_t i = 0; i < num_prediction_matches; ++i){
+            brain->resetBrain();
+            game.Restart();
+            game.Start();
+            num_turns = 0;
+            num_correct = 0;
+            state = game.GetState();
+            while(!state.game_over){
+                if(state.cur_agent == 1){
+                    num_turns++;
+                    brain_predicted_move_idx = agent_brain.GetMoveIdx(state);
+                    game.Step();   
+                    state = game.GetState();
+                    if(state.previous_move_idx == brain_predicted_move_idx)
+                        num_correct += 1;
+                }
+                else{
+                    game.Step();
+                    state = game.GetState();
+                }
             }
-            else{
-                game.Step();
-                state = game.GetState();
-            }
+            avg_prediction_score += num_correct / num_turns;
         }
-        org->dataMap.append(weight_name_vec[weight_idx], num_correct / num_turns);
+        org->dataMap.append(weight_name_vec[weight_idx], avg_prediction_score / num_prediction_matches);
     }
   }
 }

@@ -29,11 +29,13 @@ public:
 	static std::shared_ptr<ParameterLink<double>> inflowPL;
 	static std::shared_ptr<ParameterLink<double>> outflowPL;
 	static std::shared_ptr<ParameterLink<int>> leadingUpdatesPL;
+	static std::shared_ptr<ParameterLink<double>> consumptionFractionPL;
+	static std::shared_ptr<ParameterLink<double>> maxCapPL;
 
 	std::vector<double> scores, adjusted_scores;
 	std::vector<std::string> optimize_value_name_vec;
     std::vector<double> resource_pools;
-	double epsilon, inflow, outflow;
+	double epsilon, inflow, outflow, consumption_frac, max_cap;
     int tournament_size, leading_updates;
 
 	std::shared_ptr<Abstract_MTree> nextPopSizeFormula;
