@@ -96,11 +96,11 @@ void EcoEAOptimizer::optimize(std::vector<std::shared_ptr<Organism>> &population
   adjusted_scores.clear();
   
   std::vector<double> avgScores;
-  avgScores.reserve(optimize_value_name_vec.size());
+  avgScores.resize(optimize_value_name_vec.size(), 0);
   std::vector<double> maxScores;
-  maxScores.reserve(optimize_value_name_vec.size());
+  maxScores.resize(optimize_value_name_vec.size(), 0);
   std::vector<double> minScores;
-  minScores.reserve(optimize_value_name_vec.size());
+  minScores.resize(optimize_value_name_vec.size(), 0);
   std::vector<size_t> num_at_max;
   num_at_max.resize(optimize_value_name_vec.size(), 0);
   std::vector<size_t> is_min_set_vec;
@@ -125,7 +125,7 @@ void EcoEAOptimizer::optimize(std::vector<std::shared_ptr<Organism>> &population
     }
   }
   // Divide through averages
-  for(size_t opt_idx = 0; opt_idx < optimize_value_name_vec.size(); ++opt_idx){
+  for(size_t opt_idx = 0; opt_idx < optimize_value_name_vec.size(); ++opt_idx){ 
     avgScores[opt_idx] /= population.size();
   }
   // Account for epsilon

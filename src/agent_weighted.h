@@ -223,6 +223,15 @@ public :
         rand.ResetSeed(seed);
         rand_seeded = true;
     }
+    size_t GetMoveIdx(BackgammonState& state){
+        if(!rand_seeded){
+            std::cout << std::endl;
+            std::cout << std::endl;
+            std::cerr << "ERROR: Weighted agent's random seed was not set." << std::endl;
+            exit(-1);
+        }
+        return ScoreMoves(state);
+    }
     void SetWeight_MostForward(double d){
         weight_most_forward = d;
     }

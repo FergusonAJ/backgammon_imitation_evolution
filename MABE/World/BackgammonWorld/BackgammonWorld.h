@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <thread>
 #include <vector>
+#include <utility>
 
 class BackgammonWorld : public AbstractWorld {
 
@@ -44,8 +45,10 @@ public:
   BackgammonGame game;
   BackgammonAgent_Brain agent_brain;
   BackgammonAgent_PubEval agent_pub_eval; 
-  BackgammonAgent_Random agent_random; 
-  BackgammonAgent_Weighted agent_weighted; 
+  BackgammonAgent_Random agent_random, agent_random_2; 
+  std::vector<BackgammonAgent_Weighted> agent_weighted_vec;
+  std::vector<std::string> weight_name_vec {"mostForward", "avgForward", "leastForward", 
+        "aggressive", "wideDefense", "tallDefense"};
   bool use_random_agent;
 
   BackgammonWorld(std::shared_ptr<ParametersTable> PT_ = nullptr);
@@ -123,8 +126,27 @@ BackgammonWorld::BackgammonWorld(std::shared_ptr<ParametersTable> PT_)
     game.SetSeed(Global::randomSeedPL->get());
     agent_brain.SetRandomSeed(Global::randomSeedPL->get());
     agent_random.SetRandomSeed(Global::randomSeedPL->get());
-    agent_weighted.SetRandomSeed(Global::randomSeedPL->get());
+    agent_random_2.SetRandomSeed(Global::randomSeedPL->get());
+    // Attach the agents to be used
     game.AttachAgent(&agent_brain);
+    if(use_random_agent)
+        game.AttachAgent(&agent_random);
+    else
+        game.AttachAgent(&agent_pub_eval);
+    for(size_t i = 0; i < 6; ++i){
+        BackgammonAgent_Weighted agent_weighted;
+        agent_weighted.SetRandomSeed(Global::randomSeedPL->get());
+        agent_weighted.SetAgentId(1);
+        game.ReplaceAgent(&agent_weighted, 1); // Just to grab a callback
+        agent_weighted.SetWeight_MostForward( i == 0 ? 1 : 0);// Most Forward
+        agent_weighted.SetWeight_AvgForward(  i == 1 ? 1 : 0);// Avg Forward 
+        agent_weighted.SetWeight_LeastForward(i == 2 ? 1 : 0);// Least Forward
+        agent_weighted.SetWeight_Aggressive(  i == 3 ? 1 : 0);// Aggressive
+        agent_weighted.SetWeight_WideDefense( i == 4 ? 1 : 0);// Wide Defense
+        agent_weighted.SetWeight_TallDefense( i == 5 ? 1 : 0);// Tall Defense
+        agent_weighted_vec.push_back(agent_weighted);
+    }
+    game.ReplaceAgent(&agent_brain, 1); // Replace the agent to be checked
     if(use_random_agent)
         game.AttachAgent(&agent_random);
     else
@@ -165,54 +187,52 @@ void BackgammonWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze,
     }
     // Set score where needed
     double score = ((double)wins_agent_1) / ((double)(num_matches));
-    //org->dataMap.append("score", score * score_scaling_factor);
     org->dataMap.append("score", 0.0);
     org->dataMap.append("winRate", score * score_scaling_factor);
     if (visualize)
       std::cout << "organism with ID " << org->ID << " scored " << score
                 << std::endl;
-    std::vector<std::string> weight_name_vec {"mostForward", "avgForward", "leastForward", 
-        "aggressive", "wideDefense", "tallDefense"};
-    game.ReplaceAgent(&agent_weighted, 1);
+    // Set up for prediction scoring
+    game.ReplaceAgent(&agent_random_2, 1); // We just need a way to advance the turns
     game.Restart();
     size_t num_turns = 0;
-    double num_correct = 0;
-    double avg_prediction_score = 0;
-    size_t brain_predicted_move_idx;
+    std::vector<double> num_correct_vec;
+    std::vector<double> avg_prediction_score_vec;
+    avg_prediction_score_vec.resize(weight_name_vec.size(), 0);
+    size_t brain_move_idx;
+    size_t brain_agent_idx;
+    std::pair<size_t, size_t> brain_results;
     BackgammonState state;
-    for(size_t weight_idx = 0; weight_idx < weight_name_vec.size(); weight_idx++){
-        // Setup the correct opponent
-        agent_weighted.SetWeight_MostForward(weight_name_vec[weight_idx]  == "mostForward" ? 1 : 0);
-        agent_weighted.SetWeight_AvgForward(weight_name_vec[weight_idx]   == "avgForward"  ? 1 : 0);
-        agent_weighted.SetWeight_LeastForward(weight_name_vec[weight_idx] == "leastForward"? 1 : 0);
-        agent_weighted.SetWeight_Aggressive(weight_name_vec[weight_idx]   == "aggressive"   ? 1 : 0);
-        agent_weighted.SetWeight_WideDefense(weight_name_vec[weight_idx]  == "wideDefense" ? 1 : 0);
-        agent_weighted.SetWeight_TallDefense(weight_name_vec[weight_idx]  == "tallDefense" ? 1 : 0);
-        avg_prediction_score = 0;
-        for(size_t i = 0; i < num_prediction_matches; ++i){
-            brain->resetBrain();
-            game.Restart();
-            game.Start();
-            num_turns = 0;
-            num_correct = 0;
-            state = game.GetState();
-            while(!state.game_over){
-                if(state.cur_agent == 1){
-                    num_turns++;
-                    brain_predicted_move_idx = agent_brain.GetMoveIdx(state);
-                    game.Step();   
-                    state = game.GetState();
-                    if(state.previous_move_idx == brain_predicted_move_idx)
-                        num_correct += 1;
-                }
-                else{
-                    game.Step();
-                    state = game.GetState();
-                }
+    for(size_t i = 0; i < num_prediction_matches; ++i){
+        brain->resetBrain();
+        game.Restart();
+        game.Start();
+        num_turns = 0;
+        num_correct_vec.clear();
+        num_correct_vec.resize(weight_name_vec.size(), 0);
+        state = game.GetState();
+        while(!state.game_over){
+            if(state.cur_agent == 1){
+                num_turns++;
+                brain_results = agent_brain.GetMoveInfo(state);
+                brain_move_idx = brain_results.first;
+                brain_agent_idx = brain_results.second;
+                if(agent_weighted_vec[brain_agent_idx].GetMoveIdx(state) == brain_move_idx)
+                    num_correct_vec[brain_agent_idx] += 1.0;
+                game.Step();   
+                state = game.GetState();
             }
-            avg_prediction_score += num_correct / num_turns;
+            else{
+                game.Step();
+                state = game.GetState();
+            }
         }
-        org->dataMap.append(weight_name_vec[weight_idx], avg_prediction_score / num_prediction_matches);
+        for(size_t weight_idx = 0; weight_idx < weight_name_vec.size(); weight_idx++)
+            avg_prediction_score_vec[weight_idx] += num_correct_vec[weight_idx] / num_turns;
+    }
+    for(size_t weight_idx = 0; weight_idx < weight_name_vec.size(); weight_idx++){
+        org->dataMap.append(weight_name_vec[weight_idx], 
+                avg_prediction_score_vec[weight_idx] / num_prediction_matches);
     }
   }
 }
@@ -229,7 +249,7 @@ void BackgammonWorld::evaluate(std::map<std::string, std::shared_ptr<Group>> &gr
 std::unordered_map<std::string, std::unordered_set<std::string>>
 BackgammonWorld::requiredGroups() {
   return {{groupNamePL->get(PT),
-        {"B:" + brainNamePL->get(PT) + ",24,1"}}};
+        {"B:" + brainNamePL->get(PT) + ",24,7"}}};
   // requires a root group and a brain (in root namespace) and no addtional
   // genome,
   // the brain must have 1 input, and the variable numberOfOutputs outputs

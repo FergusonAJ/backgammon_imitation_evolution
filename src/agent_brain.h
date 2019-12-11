@@ -14,6 +14,7 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include <utility>
 
 class BackgammonAgent_Brain : public BackgammonAgent_Base{
 private: 
@@ -75,14 +76,28 @@ public :
         rand.ResetSeed(seed);
         rand_seeded = true;
     }
-    size_t GetMoveIdx(BackgammonState& state){
+    // Returns to size_t's. 
+    // First is the selected move index
+    // Second is the agent the network is identifying as. 
+    std::pair<size_t, size_t> GetMoveInfo(BackgammonState& state){
         if(!rand_seeded){
             std::cout << std::endl;
             std::cout << std::endl;
-            std::cerr << "ERROR: Random agent's random seed was not set." << std::endl;
+            std::cerr << "ERROR: Brain agent's random seed was not set." << std::endl;
             exit(-1);
         }
-        return ScoreMoves(state);
+        size_t move_idx = ScoreMoves(state);
+        int predicted_agent_idx = -1;
+        double max_val = 0;
+        double cur_val = 0;
+        for(size_t i = 0; i < 6; ++i){
+            cur_val = brain_ptr->readOutput(i + 1);
+            if(predicted_agent_idx == -1 || cur_val > max_val){
+                max_val = cur_val;
+                predicted_agent_idx = i;
+            }
+        }
+        return std::pair<size_t, size_t>{move_idx, (size_t)predicted_agent_idx};
     }
     void InsertBrain(std::shared_ptr<AbstractBrain> ptr){
         brain_ptr = ptr;
