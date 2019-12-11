@@ -30,7 +30,7 @@ std::shared_ptr<ParameterLink<int>> EcoEAOptimizer::tournamentSizePL =
 Parameters::register_parameter("OPTIMIZER_ECOEA-tournamentSize", 7,
 	"Size of each tournament in EcoEA selection");
 std::shared_ptr<ParameterLink<std::string>> EcoEAOptimizer::optimizeValueNamesPL =
-Parameters::register_parameter("OPTIMIZER_ECOEA-optimizeValueNames", (std::string) "mostForward,avgForward,leastForward,aggressive,wideDefense,tallDefense",
+Parameters::register_parameter("OPTIMIZER_ECOEA-optimizeValueNames", (std::string) "winRate,mostForward,avgForward,leastForward,aggressive,wideDefense,tallDefense",
 	"Names of data map elements to be used for EcoEA selection");
 std::shared_ptr<ParameterLink<double>> EcoEAOptimizer::inflowPL =
 Parameters::register_parameter("OPTIMIZER_ECOEA-inflow", 0.10,
@@ -103,18 +103,24 @@ void EcoEAOptimizer::optimize(std::vector<std::shared_ptr<Organism>> &population
   minScores.reserve(optimize_value_name_vec.size());
   std::vector<size_t> num_at_max;
   num_at_max.resize(optimize_value_name_vec.size(), 0);
-  double max_score = -10000000;
-  double max_adjusted_score = -10000000;
+  std::vector<size_t> is_min_set_vec;
+  is_min_set_vec.resize(optimize_value_name_vec.size(), false);
+  std::vector<size_t> is_max_set_vec;
+  is_max_set_vec.resize(optimize_value_name_vec.size(), false);
   for (auto &org : population){
     scores.push_back(org->dataMap.getDoubleVector("score")[0]);
-    if(org->dataMap.getDoubleVector("score")[0] > max_score)
-        max_score = org->dataMap.getDoubleVector("score")[0];
     adjusted_scores.push_back(org->dataMap.getDoubleVector("score")[0]);
     for(size_t opt_idx = 0; opt_idx < optimize_value_name_vec.size(); ++opt_idx){
-        if(org->dataMap.getDoubleVector(optimize_value_name_vec[opt_idx])[0] > maxScores[opt_idx])
+        if(org->dataMap.getDoubleVector(optimize_value_name_vec[opt_idx])[0] > maxScores[opt_idx] ||
+                is_max_set_vec[opt_idx] == 0){
             maxScores[opt_idx] = org->dataMap.getDoubleVector(optimize_value_name_vec[opt_idx])[0];
-        if(org->dataMap.getDoubleVector(optimize_value_name_vec[opt_idx])[0] < minScores[opt_idx])
+            is_max_set_vec[opt_idx] = 1;
+        }
+        if(org->dataMap.getDoubleVector(optimize_value_name_vec[opt_idx])[0] < minScores[opt_idx] ||
+                is_min_set_vec[opt_idx] == 0){
             minScores[opt_idx] = org->dataMap.getDoubleVector(optimize_value_name_vec[opt_idx])[0];
+            is_min_set_vec[opt_idx] = 1;
+        }
         avgScores[opt_idx] += org->dataMap.getDoubleVector(optimize_value_name_vec[opt_idx])[0];
     }
   }
@@ -147,9 +153,6 @@ void EcoEAOptimizer::optimize(std::vector<std::shared_ptr<Organism>> &population
             adjusted_scores[pop_idx] += diff;
             resource_differences[opt_idx] += diff;
         }
-    }
-    if(adjusted_scores[pop_idx] > max_adjusted_score){
-        max_adjusted_score = adjusted_scores[pop_idx];
     }
   }
 
@@ -190,7 +193,6 @@ void EcoEAOptimizer::optimize(std::vector<std::shared_ptr<Organism>> &population
 
   oldPopulation = population;
   population.insert(population.end(), newPopulation.begin(), newPopulation.end());
-  std::cout << "maxes: raw = " << max_score << ", adjusted = " << max_adjusted_score << std::endl;
   for (size_t fIndex = 0; fIndex < optimize_value_name_vec.size(); fIndex++) {
     std::cout << std::endl
               << "   " << optimize_value_name_vec[fIndex]

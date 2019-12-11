@@ -126,6 +126,9 @@ int main(int argc, char* argv[]){
     double avg_off_agent_2 = 0;
     double avg_finished_agent_1 = 0;
     double avg_finished_agent_2 = 0;
+    double avg_zero_percent = 0;
+    double avg_last_percent = 0;
+    double avg_possible_moves = 0;
 
     for(size_t game_id = 0; game_id < num_iters; ++game_id){
         game.Restart();
@@ -139,8 +142,25 @@ int main(int argc, char* argv[]){
         double off_agent_2 = 0;
         double finished_agent_1 = 0;
         double finished_agent_2 = 0;
+        double num_steps = 0;
+        double num_zeros = 0;
+        double num_lasts = 0;
+        size_t last_move_idx = 0;
+        double possible_moves = 0;
         while(!game.GetState().game_over){
-            game.Step();
+            if(game.GetState().cur_agent == 1){
+                possible_moves += game.GetState().possible_moves.size(); 
+                last_move_idx = game.GetState().possible_moves.size() - 1;
+                int guess_idx = random.GetUInt(1, game.GetState().possible_moves.size()) - 1;
+                game.Step();
+                num_steps++;
+                if(game.GetState().previous_move_idx == 0)
+                    num_zeros += 1;
+                if(game.GetState().previous_move_idx == last_move_idx)
+                    num_lasts += 1;
+            }   
+            else
+                game.Step();
             off_agent_1 += game.GetState().tokens_off_agent_1;
             off_agent_2 += game.GetState().tokens_off_agent_2;
             finished_agent_1 += game.GetState().tokens_finished_agent_1;
@@ -155,6 +175,9 @@ int main(int argc, char* argv[]){
         avg_finished_agent_1 += (finished_agent_1 / game.GetState().turn_count) / num_iters;
         avg_finished_agent_2 += (finished_agent_2 / game.GetState().turn_count) / num_iters;
         avg_num_turns += game.GetState().turn_count;
+        avg_zero_percent += (num_zeros / num_steps) / num_iters;
+        avg_last_percent += (num_lasts / num_steps) / num_iters;
+        avg_possible_moves += (possible_moves / num_steps) / num_iters;
     }
     std::cout << "Agent 1 starts: " << starts_agent_1 << std::endl;
     std::cout << "Agent 2 starts: " << starts_agent_2 << std::endl;
@@ -165,5 +188,8 @@ int main(int argc, char* argv[]){
     std::cout << "Agent 1 average finished: " << avg_finished_agent_1 << std::endl;
     std::cout << "Agent 2 average finished: " << avg_finished_agent_2 << std::endl;
     std::cout << "Average turns: " << ((double)avg_num_turns) / num_iters << std::endl;
+    std::cout << "Average % 0 moves: " << avg_zero_percent << std::endl;
+    std::cout << "Average % last moves: " << avg_last_percent << std::endl;
+    std::cout << "Average possible moves: " << avg_possible_moves << std::endl;
     return 0;
 }

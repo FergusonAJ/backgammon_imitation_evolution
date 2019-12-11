@@ -11,6 +11,12 @@ from utils import pyreq
 from subprocess import call
 import subprocess
 
+print('HEY! I bypassed this system. Using it will break everything.')
+print('Just run make (or edit the makefile directly.')
+print('I apologize for the inconvenience.')
+print('    - Austin :^)')
+exit(0)
+
 if platform.system() == 'Windows':
     pyreq.require("winreg") ## quits if had to attempt install. So user must run script again.
     import winreg ## can now safely import

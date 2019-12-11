@@ -8,18 +8,14 @@
 //     to view the full license, visit:
 //         github.com/Hintzelab/MABE/wiki/License
 
-// Evaluates agents on how many '1's they can output. This is a purely fixed
-// task
-// that requires to reactivity to stimuli.
-// Each correct '1' confers 1.0 point to score, or the decimal output determined
-// by 'mode'.
 
 // Local
 #include "BackgammonWorld.h"
-#include "../../../src/backgammon.h"
-#include "../../../src/agent_brain.h"
-#include "../../../src/agent_weighted.h"
-#include "../../../src/agent_pubeval.h"
+// Local (Non-MABE)
+//#include "../../../src/backgammon.h"
+//#include "../../../src/agent_brain.h"
+//#include "../../../src/agent_weighted.h"
+//#include "../../../src/agent_pubeval.h"
 // Empirical
 // Standard Lib
 
@@ -78,28 +74,26 @@ BackgammonWorld::BackgammonWorld(std::shared_ptr<ParametersTable> PT_)
   popFileColumns.push_back("wideDefense_VAR");
   popFileColumns.push_back("tallDefense");
   popFileColumns.push_back("tallDefense_VAR");
+    
+  // Set up Backgammon prerequisites
+  game.SetSeed(Global::randomSeedPL->get());
+  agent_brain.SetRandomSeed(Global::randomSeedPL->get());
+  game.AttachAgent(&agent_brain);
+  game.AttachAgent(&agent_pub_eval);
 }
 
 void BackgammonWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze,
                              int visualize, int debug) {
   auto brain = org->brains[brainNamePL->get(PT)]; // std::shared_ptr<AbstractBrain>, I think
   for (int r = 0; r < evaluationsPerGenerationPL->get(PT); r++) {
-    // Create the game and agents
-    BackgammonGame game;
-    game.SetSeed(Global::randomSeedPL->get());
-    BackgammonAgent_Brain agent_brain(brain);
-    BackgammonAgent_PubEval agent_2; 
-    // Setup and attach agents
-    agent_brain.SetRandomSeed(Global::randomSeedPL->get());
-    game.AttachAgent(&agent_brain);
-    //agent_2.SetRandomSeed(Random::getInt(100,1000000000));
-    game.AttachAgent(&agent_2);
-   
+    // Reattach brain and PubEval agents
+    game.ReplaceAgent(&agent_brain, 1);
+    game.ReplaceAgent(&agent_pub_eval, 2);
+    // Run some matches! 
     size_t starts_agent_1 = 0;
     size_t starts_agent_2 = 0;
     size_t wins_agent_1 = 0;
     size_t wins_agent_2 = 0;
-    //Run the matches!
     for(size_t match_id = 0; match_id < num_matches; ++match_id){
         game.Restart();
         if(game.GetState().cur_agent == 1)
@@ -118,7 +112,9 @@ void BackgammonWorld::evaluateSolo(std::shared_ptr<Organism> org, int analyze,
     }
     // Set score where needed
     double score = ((double)wins_agent_1) / ((double)(num_matches));
-    org->dataMap.append("score", score * score_scaling_factor);
+    //org->dataMap.append("score", score * score_scaling_factor);
+    org->dataMap.append("score", 0);
+    org->dataMap.append("winRate", score * score_scaling_factor);
     if (visualize)
       std::cout << "organism with ID " << org->ID << " scored " << score
                 << std::endl;

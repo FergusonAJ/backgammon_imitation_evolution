@@ -68,6 +68,9 @@ public :
         rand(),
         brain_ptr(ptr){ 
     }
+    BackgammonAgent_Brain():
+        rand(){ 
+    }
     void SetRandomSeed(int seed){
         rand.ResetSeed(seed);
         rand_seeded = true;
@@ -80,6 +83,9 @@ public :
             exit(-1);
         }
         return ScoreMoves(state);
+    }
+    void InsertBrain(std::shared_ptr<AbstractBrain> ptr){
+        brain_ptr = ptr;
     }
 };
 
