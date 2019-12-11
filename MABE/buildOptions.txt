@@ -24,7 +24,7 @@
 % Optimizer
   - Simple
   - Islands
-  - Lexicase
+  + Lexicase
   * EcoEA
 
 % Archivist

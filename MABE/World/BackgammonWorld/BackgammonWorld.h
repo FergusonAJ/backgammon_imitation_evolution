@@ -107,6 +107,8 @@ BackgammonWorld::BackgammonWorld(std::shared_ptr<ParametersTable> PT_)
     popFileColumns.push_back("score_VAR"); // specifies to also record the
                                            // variance (performed automatically
                                            // because _VAR)
+    popFileColumns.push_back("winRate");
+    popFileColumns.push_back("winRate_VAR");
     popFileColumns.push_back("mostForward");
     popFileColumns.push_back("mostForward_VAR");
     popFileColumns.push_back("avgForward");
